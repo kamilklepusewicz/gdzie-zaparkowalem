@@ -5,6 +5,7 @@ import { Pressable, StyleSheet, Text } from "react-native";
 import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
 
 const PARKING_LOCATION_KEY = "parking-location";
+const PARKING_HISTORY_KEY = "parking-history";
 
 type ParkingLocation = {
   latitude: number;
@@ -18,7 +19,7 @@ export default function Index() {
   );
   const [location, setLocation] = useState<ParkingLocation | null>(null);
 
-  const storeData = async (value: ParkingLocation) => {
+  const storeParkingLocation = async (value: ParkingLocation) => {
     try {
       await AsyncStorage.setItem(PARKING_LOCATION_KEY, JSON.stringify(value));
     } catch (e) {
@@ -57,11 +58,25 @@ export default function Index() {
         savedAt: new Date().toISOString(),
       };
       setLocationText("Lokalizacja zapisana!");
-      await storeData(parkingLocation);
+      await storeParkingLocation(parkingLocation);
+      await addLocationToHistory(parkingLocation);
       setLocation(parkingLocation);
     } catch (e) {
       setLocationText("Błąd podczas pobierania lokalizacji");
       console.log(e);
+    }
+  }
+
+  async function addLocationToHistory(location: ParkingLocation) {
+    try {
+      const historyString = await AsyncStorage.getItem(PARKING_HISTORY_KEY);
+      let history: ParkingLocation[] = historyString
+        ? JSON.parse(historyString)
+        : [];
+      history = [location, ...history];
+      await AsyncStorage.setItem(PARKING_HISTORY_KEY, JSON.stringify(history));
+    } catch (e) {
+      console.log("Błąd podczas zapisywania historii", e);
     }
   }
 
