@@ -1,15 +1,46 @@
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as Location from "expo-location";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Pressable, StyleSheet, Text } from "react-native";
 import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
+
+const PARKING_LOCATION_KEY = "parking-location";
+
+type ParkingLocation = {
+  latitude: number;
+  longitude: number;
+  savedAt: string;
+};
 
 export default function Index() {
   const [locationText, setLocationText] = useState<string>(
     "Brak zapisanej lokalizacji",
   );
-  const [location, setLocation] = useState<Location.LocationObject | null>(
-    null,
-  );
+  const [location, setLocation] = useState<ParkingLocation | null>(null);
+
+  const storeData = async (value: ParkingLocation) => {
+    try {
+      await AsyncStorage.setItem(PARKING_LOCATION_KEY, JSON.stringify(value));
+    } catch (e) {
+      console.log("Błąd podczas zapisywania danych", e);
+    }
+  };
+
+  useEffect(() => {
+    const loadLocation = async () => {
+      try {
+        const storedLocation = await AsyncStorage.getItem(PARKING_LOCATION_KEY);
+        if (storedLocation) {
+          const parsedLocation = JSON.parse(storedLocation);
+          setLocation(parsedLocation);
+          setLocationText("Zapisana lokalizacja:");
+        }
+      } catch (e) {
+        console.log("Błąd podczas ładowania danych", e);
+      }
+    };
+    loadLocation();
+  }, []);
 
   async function saveParkingLocation() {
     setLocationText("Pobieranie lokalizacji...");
@@ -19,12 +50,18 @@ export default function Index() {
       return;
     }
     try {
-      let location = await Location.getCurrentPositionAsync({});
+      let currentLocation = await Location.getCurrentPositionAsync({});
+      const parkingLocation: ParkingLocation = {
+        latitude: currentLocation.coords.latitude,
+        longitude: currentLocation.coords.longitude,
+        savedAt: new Date().toISOString(),
+      };
       setLocationText("Lokalizacja zapisana!");
-      setLocation(location);
-    } catch (error) {
+      await storeData(parkingLocation);
+      setLocation(parkingLocation);
+    } catch (e) {
       setLocationText("Błąd podczas pobierania lokalizacji");
-      console.log(error);
+      console.log(e);
     }
   }
 
@@ -39,7 +76,7 @@ export default function Index() {
         <Text style={styles.textLocation}>
           {locationText}
           {location
-            ? ` (${location.coords.latitude.toFixed(4)}, ${location.coords.longitude.toFixed(4)})`
+            ? ` (${location.latitude.toFixed(4)}, ${location.longitude.toFixed(4)})`
             : ""}
         </Text>
       </SafeAreaView>
