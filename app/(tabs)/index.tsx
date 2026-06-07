@@ -1,19 +1,47 @@
-import { Text, StyleSheet, Pressable } from "react-native";
-import {useState} from 'react';
+import * as Location from "expo-location";
+import { useState } from "react";
+import { Pressable, StyleSheet, Text } from "react-native";
 import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
 
 export default function Index() {
-  const [locationText, setLocationText] = useState("Brak zapisanej lokalizacji");
+  const [locationText, setLocationText] = useState<string>(
+    "Brak zapisanej lokalizacji",
+  );
+  const [location, setLocation] = useState<Location.LocationObject | null>(
+    null,
+  );
+
+  async function saveParkingLocation() {
+    setLocationText("Pobieranie lokalizacji...");
+    let { status } = await Location.requestForegroundPermissionsAsync();
+    if (status !== "granted") {
+      setLocationText("Brak uprawnień do lokalizacji");
+      return;
+    }
+    try {
+      let location = await Location.getCurrentPositionAsync({});
+      setLocationText("Lokalizacja zapisana!");
+      setLocation(location);
+    } catch (error) {
+      setLocationText("Błąd podczas pobierania lokalizacji");
+      console.log(error);
+    }
+  }
 
   return (
     <SafeAreaProvider>
       <SafeAreaView style={styles.container}>
         <Text style={styles.textHeader}>Gdzie zaparkowałem?</Text>
         <Text style={styles.text}>Zapisz lokalizację auta</Text>
-        <Pressable style={styles.pressable} onPress={() => setLocationText("Pozycja auta została zapisana!")}>
+        <Pressable style={styles.pressable} onPress={saveParkingLocation}>
           <Text style={styles.textButton}>Zapisz pozycję</Text>
         </Pressable>
-        <Text style={styles.textLocation}>{locationText}</Text>
+        <Text style={styles.textLocation}>
+          {locationText}
+          {location
+            ? ` (${location.coords.latitude.toFixed(4)}, ${location.coords.longitude.toFixed(4)})`
+            : ""}
+        </Text>
       </SafeAreaView>
     </SafeAreaProvider>
   );
