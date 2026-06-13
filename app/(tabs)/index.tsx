@@ -34,13 +34,13 @@ export default function Index() {
         if (storedLocation) {
           const parsedLocation = JSON.parse(storedLocation);
           setLocation(parsedLocation);
-          setLocationText("Zapisana lokalizacja:");
         }
       } catch (e) {
         console.log("Błąd podczas ładowania danych", e);
       }
     };
     loadLocation();
+    setLocationText("Zapisana lokalizacja:");
   }, []);
 
   async function saveParkingLocation() {
