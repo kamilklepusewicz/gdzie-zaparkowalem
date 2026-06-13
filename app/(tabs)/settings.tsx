@@ -25,16 +25,6 @@ export default function Settings() {
     }
   };
 
-  const setImperialUnits = async () => {
-    try {
-      await AsyncStorage.setItem(DISTANCE_UNIT_KEY, "imperial");
-      Alert.alert("Sukces", "Ustawiono jednostki: stopy/mile.");
-    } catch (e) {
-      console.log("Błąd podczas zapisywania jednostek", e);
-      Alert.alert("Błąd", "Nie udało się zapisać jednostek.");
-    }
-  };
-
   const clearSavedLocation = async () => {
     try {
       await AsyncStorage.removeItem(PARKING_LOCATION_KEY);
