@@ -1,11 +1,40 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { Alert, Pressable, StyleSheet, Text } from "react-native";
+import { useFocusEffect } from "expo-router";
+import { useCallback, useState } from "react";
+import { Alert, Pressable, StyleSheet, Switch, Text, View } from "react-native";
 import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
 
 const PARKING_LOCATION_KEY = "parking-location";
 const PARKING_HISTORY_KEY = "parking-history";
+const DISTANCE_UNIT_KEY = "distance-unit";
+
+type DistanceUnit = "metric" | "imperial";
 
 export default function Settings() {
+  const [isImperial, setIsImperial] = useState(false);
+
+  const changeDistanceUnit = async (value: boolean) => {
+    try {
+      setIsImperial(value);
+
+      const unit: DistanceUnit = value ? "imperial" : "metric";
+      await AsyncStorage.setItem(DISTANCE_UNIT_KEY, unit);
+    } catch (e) {
+      console.log("Błąd podczas zapisywania jednostek", e);
+      Alert.alert("Błąd", "Nie udało się zapisać ustawień jednostek.");
+    }
+  };
+
+  const setImperialUnits = async () => {
+    try {
+      await AsyncStorage.setItem(DISTANCE_UNIT_KEY, "imperial");
+      Alert.alert("Sukces", "Ustawiono jednostki: stopy/mile.");
+    } catch (e) {
+      console.log("Błąd podczas zapisywania jednostek", e);
+      Alert.alert("Błąd", "Nie udało się zapisać jednostek.");
+    }
+  };
+
   const clearSavedLocation = async () => {
     try {
       await AsyncStorage.removeItem(PARKING_LOCATION_KEY);
@@ -57,6 +86,22 @@ export default function Settings() {
     );
   }
 
+  useFocusEffect(
+    useCallback(() => {
+      const loadDistanceUnit = async () => {
+        try {
+          const storedUnit = await AsyncStorage.getItem(DISTANCE_UNIT_KEY);
+
+          setIsImperial(storedUnit === "imperial");
+        } catch (e) {
+          console.log("Błąd podczas ładowania jednostek", e);
+        }
+      };
+
+      loadDistanceUnit();
+    }, []),
+  );
+
   return (
     <SafeAreaProvider>
       <SafeAreaView style={styles.container}>
@@ -70,6 +115,16 @@ export default function Settings() {
         <Pressable style={styles.pressableRemoveAll} onPress={confirmClearAll}>
           <Text style={styles.pressableText}>Wyczyść wszystkie dane</Text>
         </Pressable>
+        <View style={styles.settingRow}>
+          <View>
+            <Text style={styles.settingTitle}>Jednostki dystansu</Text>
+            <Text style={styles.settingDescription}>
+              {isImperial ? "Stopy / mile" : "Metry / kilometry"}
+            </Text>
+          </View>
+
+          <Switch value={isImperial} onValueChange={changeDistanceUnit} />
+        </View>
       </SafeAreaView>
     </SafeAreaProvider>
   );
@@ -105,5 +160,20 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "bold",
     textAlign: "center",
+  },
+  settingRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 24,
+  },
+  settingTitle: {
+    fontSize: 18,
+    fontWeight: "bold",
+  },
+  settingDescription: {
+    fontSize: 14,
+    color: "#666",
+    marginTop: 4,
   },
 });

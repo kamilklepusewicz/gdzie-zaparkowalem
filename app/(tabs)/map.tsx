@@ -7,8 +7,10 @@ import MapView, { Marker, Polyline } from "react-native-maps";
 import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
 
 const PARKING_LOCATION_KEY = "parking-location";
+const DISTANCE_UNIT_KEY = "distance-unit";
+const USE_TEST_USER_LOCATION = true;
 
-const USE_TEST_USER_LOCATION = false;
+type DistanceUnit = "metric" | "imperial";
 
 const TEST_USER_LOCATION: UserLocation = {
   latitude: 51.0765,
@@ -55,6 +57,7 @@ export default function Map() {
   const [location, setLocation] = useState<ParkingLocation | null>(null);
   const mapRef = useRef<MapView | null>(null);
   const [userLocation, setUserLocation] = useState<UserLocation | null>(null);
+  const [distanceUnit, setDistanceUnit] = useState<DistanceUnit>("metric");
 
   function getRegion(location: ParkingLocation) {
     return {
@@ -111,7 +114,22 @@ export default function Map() {
           setLocation(null);
         }
       };
+      const loadDistanceUnit = async () => {
+        try {
+          const storedUnit = await AsyncStorage.getItem(DISTANCE_UNIT_KEY);
+
+          if (storedUnit === "imperial" || storedUnit === "metric") {
+            setDistanceUnit(storedUnit);
+          } else {
+            setDistanceUnit("metric");
+          }
+        } catch (e) {
+          console.log("Błąd podczas ładowania jednostek", e);
+          setDistanceUnit("metric");
+        }
+      };
       loadLocation();
+      loadDistanceUnit();
     }, []),
   );
 
@@ -148,6 +166,21 @@ export default function Map() {
     }, []),
   );
 
+  function formatDistance(distance: number, unit: DistanceUnit) {
+    if (unit === "imperial") {
+      const feet = distance * 3.28084;
+      const miles = distance / 1609.344;
+
+      return distance < 1609.344
+        ? `${Math.round(feet)} ft od auta`
+        : `${miles.toFixed(2)} mi od auta`;
+    }
+
+    return distance < 1000
+      ? `${Math.round(distance)} m od auta`
+      : `${(distance / 1000).toFixed(2)} km od auta`;
+  }
+
   const distance =
     location && userLocation
       ? calculateDistance(
@@ -161,9 +194,7 @@ export default function Map() {
   const distanceText =
     distance === null
       ? "Pobieranie lokalizacji użytkownika..."
-      : distance < 1000
-        ? `${Math.round(distance)} m od auta`
-        : `${(distance / 1000).toFixed(2)} km od auta`;
+      : formatDistance(distance, distanceUnit);
 
   return (
     <SafeAreaProvider>
