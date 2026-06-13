@@ -1,6 +1,7 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as Location from "expo-location";
-import { useEffect, useState } from "react";
+import { useFocusEffect } from "expo-router";
+import { useCallback, useState } from "react";
 import { Pressable, StyleSheet, Text } from "react-native";
 import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
 
@@ -27,21 +28,30 @@ export default function Index() {
     }
   };
 
-  useEffect(() => {
-    const loadLocation = async () => {
-      try {
-        const storedLocation = await AsyncStorage.getItem(PARKING_LOCATION_KEY);
-        if (storedLocation) {
-          const parsedLocation = JSON.parse(storedLocation);
-          setLocation(parsedLocation);
+  useFocusEffect(
+    useCallback(() => {
+      const loadLocation = async () => {
+        try {
+          const storedLocation =
+            await AsyncStorage.getItem(PARKING_LOCATION_KEY);
+
+          if (storedLocation) {
+            const parsedLocation = JSON.parse(storedLocation);
+            setLocation(parsedLocation);
+            setLocationText("Zapisana lokalizacja:");
+          } else {
+            setLocation(null);
+            setLocationText("Brak zapisanej lokalizacji");
+          }
+        } catch (e) {
+          console.log("Błąd podczas ładowania danych", e);
+          setLocationText("Błąd podczas ładowania lokalizacji");
         }
-      } catch (e) {
-        console.log("Błąd podczas ładowania danych", e);
-      }
-    };
-    loadLocation();
-    setLocationText("Zapisana lokalizacja:");
-  }, []);
+      };
+
+      loadLocation();
+    }, []),
+  );
 
   async function saveParkingLocation() {
     setLocationText("Pobieranie lokalizacji...");
