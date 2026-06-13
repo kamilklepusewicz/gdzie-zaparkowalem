@@ -12,7 +12,24 @@ type ParkingLocation = {
   latitude: number;
   longitude: number;
   savedAt: string;
+  address?: string;
 };
+
+export function formatAddress(
+  address: Location.LocationGeocodedAddress | null,
+) {
+  if (!address) {
+    return "Nieznany adres";
+  }
+
+  const streetWithNumber = [address.street, address.streetNumber]
+    .filter(Boolean)
+    .join(" ");
+
+  const parts = [streetWithNumber, address.city].filter(Boolean);
+
+  return parts.length > 0 ? parts.join(", ") : "Nieznany adres";
+}
 
 export default function Index() {
   const [locationText, setLocationText] = useState<string>(
@@ -38,7 +55,7 @@ export default function Index() {
           if (storedLocation) {
             const parsedLocation = JSON.parse(storedLocation);
             setLocation(parsedLocation);
-            setLocationText("Zapisana lokalizacja:");
+            setLocationText("Zapisana lokalizacja: ");
           } else {
             setLocation(null);
             setLocationText("Brak zapisanej lokalizacji");
@@ -62,15 +79,31 @@ export default function Index() {
     }
     try {
       let currentLocation = await Location.getCurrentPositionAsync({});
+      const latitude = currentLocation.coords.latitude;
+      const longitude = currentLocation.coords.longitude;
+
+      let addressText = "Nieznany adres";
+
+      try {
+        const geocodedAddress = await Location.reverseGeocodeAsync({
+          latitude,
+          longitude,
+        });
+
+        addressText = formatAddress(geocodedAddress[0] ?? null);
+      } catch (e) {
+        console.log("Błąd podczas pobierania adresu", e);
+      }
       const parkingLocation: ParkingLocation = {
-        latitude: currentLocation.coords.latitude,
-        longitude: currentLocation.coords.longitude,
+        latitude: latitude,
+        longitude: longitude,
         savedAt: new Date().toISOString(),
+        address: addressText,
       };
-      setLocationText("Lokalizacja zapisana!");
       await storeParkingLocation(parkingLocation);
       await addLocationToHistory(parkingLocation);
       setLocation(parkingLocation);
+      setLocationText("Lokalizacja zapisana!");
     } catch (e) {
       setLocationText("Błąd podczas pobierania lokalizacji");
       console.log(e);
@@ -98,12 +131,10 @@ export default function Index() {
         <Pressable style={styles.pressable} onPress={saveParkingLocation}>
           <Text style={styles.textButton}>Zapisz pozycję</Text>
         </Pressable>
-        <Text style={styles.textLocation}>
-          {locationText}
-          {location
-            ? ` (${location.latitude.toFixed(4)}, ${location.longitude.toFixed(4)})`
-            : ""}
-        </Text>
+        <Text style={styles.textLocation}>{locationText}</Text>
+        {location?.address && (
+          <Text style={styles.textLocation}>{location.address}</Text>
+        )}
       </SafeAreaView>
     </SafeAreaProvider>
   );

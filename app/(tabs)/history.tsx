@@ -10,6 +10,7 @@ type ParkingLocation = {
   latitude: number;
   longitude: number;
   savedAt: string;
+  address?: string;
 };
 
 export default function History() {
@@ -45,9 +46,8 @@ export default function History() {
           data={history}
           renderItem={({ item }) => (
             <View style={styles.historyItem}>
-              <Text style={styles.wspolrzedne}>
-                Współrzędne: {item.latitude.toFixed(4)},{" "}
-                {item.longitude.toFixed(4)}
+              <Text style={styles.address}>
+                Adres: {item.address ?? "Nieznany adres"}
               </Text>
               <Text style={styles.savedAt}>
                 Zapisano: {new Date(item.savedAt).toLocaleString()}
@@ -77,7 +77,7 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: "#ccc",
   },
-  wspolrzedne: {
+  address: {
     fontSize: 16,
   },
   savedAt: {
