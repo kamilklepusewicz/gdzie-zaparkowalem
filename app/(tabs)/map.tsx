@@ -8,7 +8,7 @@ import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
 
 const PARKING_LOCATION_KEY = "parking-location";
 const DISTANCE_UNIT_KEY = "distance-unit";
-const USE_TEST_USER_LOCATION = true;
+const USE_TEST_USER_LOCATION = false;
 
 type DistanceUnit = "metric" | "imperial";
 
